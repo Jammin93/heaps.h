@@ -13,13 +13,13 @@
 #define bool short
 
 typedef struct {
-	void* arr;						// Pointer to the array to be heapified.
-	long long size;					// The size of the array.
-	long long end;					// The last index position of the array.
-	long long tsize;				// The size of the data types in the array.
-	bool is_max;					// Indicate whether the heap is a max heap.
-	short (*cmp)(void*, void*);		// The comparison function for the data
-} HEAP;								// types stored in the array.
+	void* arr;			// Pointer to the array to be heapified.
+	long long size;			// The size of the array.
+	long long end;			// The last index position of the array.
+	long long tsize;		// The size of the data types in the array.
+	bool is_max;			// Indicate whether the heap is a max heap.
+	short (*cmp)(void*, void*);	// The comparison function for the data
+} HEAP;					// types stored in the array.
 
 void
 swap(void* vp1, void* vp2, long long tsize) {
