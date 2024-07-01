@@ -13,13 +13,13 @@
 #define bool short
 
 typedef struct {
-	void* arr;			    // Pointer to the array to be heapified.
+	void* arr;			        // Pointer to the array to be heapified.
 	long long size;			    // The size of the array.
 	long long end;			    // The last index position of the array.
 	long long tsize;		    // The size of the data types in the array.
 	bool is_max;			    // Indicate whether the heap is a max heap.
-	short (*cmp)(void*, void*);	    // The comparison function for the data
-} HEAP;					    // types stored in the array.
+	short (*cmp)(void*, void*);	// The comparison function for the data
+} HEAP;					        // types stored in the array.
 
 void
 swap(void* vp1, void* vp2, long long tsize) {
@@ -133,7 +133,7 @@ sift_down(HEAP heap, long long idx, long long end) {
 	long long plus_two = 2 * heap.tsize;
 	/*	
 	The value to compare against for determining whether the value at `idx` is 
-        less-than or greater-than some other value. This is determined by whether 
+    less-than or greater-than some other value. This is determined by whether 
 	or not we receive a max heap or a min heap. Use -1 for less-than 
 	comparisons (max heap) and 1 for greater-than comparisons (min heap).
 	*/
@@ -190,7 +190,7 @@ sift_up(HEAP heap, long long idx) {
 	char* pa = (char*) heap.arr;
 	/*	
 	The value to compare against for determining whether the value at `idx` is 
-        less-than or greater-than some other value. This is determined by whether 
+    less-than or greater-than some other value. This is determined by whether 
 	or not we receive a max heap or a min heap. Use -1 for less-than 
 	comparisons (max heap) and 1 for greater-than comparisons (min heap).
 	*/
