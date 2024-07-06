@@ -1,313 +1,285 @@
-#ifndef HEAPS_H_
-#define HEAPS_H_
+// Static library for generic min and max heaps.
+#ifndef HEAPS_H
+#define HEAPS
 
-// Header file for building generic min and max heaps.
+#define VERSION "1.0.0"
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <math.h>
 
 #define true 1
 #define false 0
 #define bool short
 
+#define ALLOC_ERROR 1
+#define EMPTY_ARRAY_ERROR 1
+
 typedef struct {
-	void* arr;			        // Pointer to the array to be heapified.
-	long long size;			    // The size of the array.
-	long long end;			    // The last index position of the array.
-	long long tsize;		    // The size of the data types in the array.
-	bool is_max;			    // Indicate whether the heap is a max heap.
-	short (*cmp)(void*, void*);	// The comparison function for the data
-} HEAP;					        // types stored in the array.
+	void *elems;					// Dynamic array to be heapified.
+	long long size;					// Allocated size of the array.
+	long long logsize;				// Logical size of the array.
+	long long elemsize;				// Size of the elements in bytes.
+	bool is_max;					// Whether the heap is a max heap.
+	short (*cmp_fn)(void*, void*);	// Element comparison function.
+	void (*free_fn)(void*);			// Freeing function for nested pointers.
+} HEAP;
 
-void
-swap(void* vp1, void* vp2, long long tsize) {
-	/*	
-	Swap the bit patterns of the two void pointers. Number of bytes to swap 
-	is determined by `tsize`.
+static void
+swap(void *vp1, void *vp2, long long elemsize) {
+	/*	Swap the bit patterns of the two void pointers. The number of bytes to 
+		swap is determined by `elemsize`. 
 	*/
-	unsigned char *x = vp1, *y = vp2, temp;
-	for (long long i = 0; i < tsize; ++i) {
-		temp = x[i];
-		x[i] = y[i];
-		y[i] = temp;	
+	unsigned char *p = vp1, *r = vp2, temp;
+	for (long long i = 0; i < elemsize; ++i) {
+		temp = p[i];
+		p[i] = r[i];
+		r[i] = temp;
 	}
+
 }
 
-long long
-double_size(void *vp, long long size, long long tsize) {
-	/*	
-	Double the size of the allocated space for the pointer and return the 
-	new size.
+static bool
+gte(void *vp1, void *vp2, short (*cmp_fn)(void*, void*)) {
+	short res = cmp_fn(vp1, vp2);
+	return (res == 0 || res == 1);
+}
+
+static bool
+lte(void *vp1, void *vp2, short (*cmp_fn)(void*, void*)) {
+	short res = cmp_fn(vp1, vp2);
+	return (res == 0 || res == -1);
+}
+
+static short
+heap_double(HEAP *heap) {
+	// Double the size of the heap.
+	heap->size *= 2;
+	heap->elems = realloc(heap->elems, heap->size * heap->elemsize);
+	if (! heap->elems) {
+		return ALLOC_ERROR;
+	}
+	return 0;
+}
+
+static void
+sift_down(HEAP *heap, long long idx, long long upper) {
+	/*	For max heaps, move the value at `idx` down in the heap until it is 
+		smaller than its parent and larger than both of its children. For min
+		heaps, move the value at `idx` down until the opposite is true.
 	*/
-	long long new_size = size * 2;
-	char* temp = (char*) realloc(vp, new_size * tsize);
-	if (temp != NULL) {
-		vp = temp;	
+	char *elems = (char*) heap->elems;
+	long long left, right, swap_idx;
+	/*	The inequality function for comparing the values of child nodes with
+		the value at `idx`. For max heaps, we use `gte`, and for min heaps, we 
+		use `lte`.
+	*/
+	bool (*ineq_fn)(void*, void*, short (*)(void*, void*));
+	if (heap->is_max) {
+		ineq_fn = &gte;
 	}
 	else {
-		fprintf(stderr, "Unable to allocate sufficient memory for array!\n");
-		exit(1);
+		ineq_fn = &lte;
 	}
-	return new_size;
-}
-
-short
-cmpstr(void* vp1, void* vp2) {
-	/*
-	Compare two strings. Returns:
-		-1: if the value at `vp1` is less than the value at `vp2`
-		 0: if the values are equal
-		 1: if the value at `vp1` is greater than the value at `vp2`
-	*/
-	char* ps1 = *(char**) vp1;
-	char* ps2 = *(char**) vp2;
-	int res = strcmp(ps1, ps2);
-	if (res < 0) { 
-		return -1; 
-	}
-	else if (res == 0) { 
-		return res; 
-	}
-	else {
-		return 1;
-	}
-}
-
-short
-cmpint(void* vp1, void* vp2) {
-	/*
-	Compare two integers. Returns:
-		-1: if the value at `vp1` is less than the value at `vp2`
-		 0: if the values are equal
-		 1: if the value at `vp1` is greater than the value at `vp2`
-	*/
-	int* pi1 = (int*) vp1;
-	int* pi2 = (int*) vp2;
-	if (*pi1 < *pi2) {
-		return -1;
-	}
-	else if (*pi1 == *pi2) {
-		return 0;	
-	}
-	else {
-		return 1;	
-	}
-}
-
-short
-cmpfloat(void* vp1, void* vp2) {
-	/*
-	Compare two floats. Returns:
-		-1: if the value at `vp1` is less than the value at `vp2`
-		 0: if the values are equal
-		 1: if the value at `vp1` is greater than the value at `vp2`
-	*/
-	float* vf1 = (float*) vp1;
-	float* vf2 = (float*) vp2;
-	if (fabsf(*vf1 - *vf2) < 1e-10) {
-		return 0;
-	}
-	else if (vf1 < vf2) {
-		return -1;
-	}
-	else { 
-		return 1; 
-	}
-}
-
-const short const (*CMPSTR)(void*, void*) = &cmpstr;
-const short const (*CMPINT)(void*, void*) = &cmpint;
-const short const (*CMPFLOAT)(void*, void*) = &cmpfloat;
-
-void
-sift_down(HEAP heap, long long idx, long long end) {
-	/*
-	For max heaps, move the value at `idx` down in the heap until it is smaller 
-	than its parent and larger than both of its children. For min heaps we 
-	move the value at `idx` down until the opposite is true.
-	*/
-	char* pa = (char*) heap.arr;
-	long long left, right, to_swap;
-	long long plus_two = 2 * heap.tsize;
-	/*	
-	The value to compare against for determining whether the value at `idx` is 
-    less-than or greater-than some other value. This is determined by whether 
-	or not we receive a max heap or a min heap. Use -1 for less-than 
-	comparisons (max heap) and 1 for greater-than comparisons (min heap).
-	*/
-	short cmp_value = (heap.is_max == true) ? 1 : -1;
-	idx = idx * heap.tsize;
-	end = end * heap.tsize;
+	idx *= heap->elemsize;
+	upper *= heap->elemsize;
 	while (true) {
-		left = (idx * 2 + heap.tsize); // The left child
-		right = (idx * 2 + plus_two);  // The right child
-		// First check to see if `idx` has two direct children.		
-		if (right <= end) {
-			if (
-					heap.cmp(&pa[left], &pa[right]) == 0 ||
-					heap.cmp(&pa[left], &pa[right]) == cmp_value) {
-				to_swap = left;					
+		// Compute the left and right child nodes.
+		left = idx * 2 + heap->elemsize;
+		right = left + heap->elemsize;
+		// Check to see if we have two descendants.
+		if (right <= upper) {
+			// Pick index with the larger value.
+			if (ineq_fn(&elems[left], &elems[right], heap->cmp_fn) == true) {
+				swap_idx = left;
 			}
 			else {
-				to_swap = right;			
+				swap_idx = right;
 			}
+		}
+		// Check to see if we have at least one descendant.
+		else if (left <= upper) {
+			swap_idx = left;
+		}
+		// We have no descendants; nothing to swap; bail
+		else {
+			break;
+		}
+		if (ineq_fn(&elems[idx], &elems[swap_idx], heap->cmp_fn) == true) {
+			// The value at `idx` is in its correct position in the heap.
+			break;
+		}
+		swap(&elems[idx], &elems[swap_idx], heap->elemsize);
+		idx = swap_idx;
+	}	
+}
+
+static void
+sift_up(HEAP *heap, long long idx) {
+	/*	For max heaps, move the value at `idx` up in the heap until it is
+		smaller than its parent and larger than both of its children. For min
+		heaps, we move the value at `idx` up until the opposite is true.
+	*/
+	char *elems = (char*) heap->elems;
+	/*	The inequality value to compare against for determining whether the 
+		value at `idx` is less-than or greater-than some other value. This is
+		determined by whether we receive a min or max heap. Use -1 for 
+		less-than comparisons (min heaps) and 1 for greater-than comparisons
+		(min heap).
+	*/
+	short ineq = (heap->is_max) ? 1 : -1;
+	long long parent = (idx - 1) / 2 * heap->elemsize;
+	idx = idx * heap->elemsize;
+	while (idx > 0 && heap->cmp_fn(&elems[idx], &elems[parent]) == ineq) {
+		swap(&elems[idx], &elems[parent], heap->elemsize);
 		
-			if (
-					heap.cmp(&pa[idx], &pa[to_swap]) == 0 ||
-					heap.cmp(&pa[idx], &pa[to_swap]) == cmp_value) {
-				break;			
-			}
-			swap(&pa[idx], &pa[to_swap], heap.tsize);
-			idx = to_swap;
-		}
-		/* 
-		If `idx` doesn't have two children, check to see if it has at least one.
-		*/
-		else if (left <= end) {
-			if (
-					heap.cmp(&pa[idx], &pa[left]) == 0 ||
-					heap.cmp(&pa[idx], &pa[left]) == cmp_value) {
-				break;			
-			}
-			swap(&pa[idx], &pa[left], heap.tsize);
-			idx = left;
-		}
-		// If there are no children then we bail; there's nothing to swap.
-		else { break; }
-	}
-}
-
-void
-sift_up(HEAP heap, long long idx) {
-	/*
-	For max heaps, move the value at `idx` up in the heap until it is smaller 
-	than its parent and larger than both of its children. For min heaps we 
-	move the value at `idx` up until the opposite is true.
-	*/
-	long long parent = (idx - 1) / 2 * heap.tsize;
-	char* pa = (char*) heap.arr;
-	/*	
-	The value to compare against for determining whether the value at `idx` is 
-    less-than or greater-than some other value. This is determined by whether 
-	or not we receive a max heap or a min heap. Use -1 for less-than 
-	comparisons (max heap) and 1 for greater-than comparisons (min heap).
-	*/
-	short cmp_value = (heap.is_max == true) ? 1 : -1;
-	idx = idx * heap.tsize;
-	while (idx > 0 && heap.cmp(&pa[idx], &pa[parent]) == cmp_value) {
-		swap(&pa[idx], &pa[parent], heap.tsize);
 		idx = parent;
-		parent = (idx / heap.tsize - 1) / 2 * heap.tsize;
+		parent = (idx / heap->elemsize - 1) / 2 * heap->elemsize;
 	}
 }
 
-void*
-pop(HEAP* heap) {
-	// Pop the last element off of the heap and return a pointer to that value.
-	static void* res;
-	char* pa = (char*) heap->arr;
-	long long end = heap->end * heap->tsize;
-	if (heap->end >= 1) {
-		swap(&pa[0], &pa[end], heap->tsize);
-		res = (int*) &pa[end];
-		heap->end = heap->end - 1;
-		if (heap->end > 1) {
-			sift_down(*heap, 0, heap->end);		
-		}	
+short
+heap_push(HEAP *heap, void *elem_addr) {
+	/*	Push the value at `elem_addr` onto the heap. Resize the heap array if 
+		necessary.
+
+		Params
+		------
+		*heap: a HEAP pointer
+		*elem_addr: pointer to the base address of the value to be pushed
+	*/
+	if (heap->size == heap->logsize) {
+		short exit_code = heap_double(heap);
+		if (exit_code == ALLOC_ERROR) {
+			return exit_code;
+		}
 	}
-	else if (heap->end == 0) {
-		res = (int*) &pa[end];
-		printf("%d\n", *(int*)res);
-		heap->end = heap->end - 1;
+	void * target = (char*) heap->elems + heap->logsize * heap->elemsize;
+	memcpy(target, elem_addr, heap->elemsize);
+	++heap->logsize;
+	sift_up(heap, heap->logsize - 1);
+	return 0;
+}
+
+short
+heap_pop(HEAP *heap, void *elem_addr) {
+	/*	Pop the first element off of the heap and copy it's value to 
+		`elem_addr`. The heap is re-heapified after the value has been popped.
+
+		Params
+		------
+		*heap: a HEAP pointer
+		*elem_addr: the base address where the popped value will be copied
+	*/
+	long long upper = (heap->logsize - 1) * heap->elemsize;
+	char *elems = (char*) heap->elems;
+	void *source = elems + upper;
+	if (heap->logsize >= 2) {
+		swap(&elems[0], &elems[upper], heap->elemsize);
+		memcpy(elem_addr, source, heap->elemsize);
+		--heap->logsize;
+		if (heap->logsize > 1) {
+			sift_down(heap, 0, heap->logsize - 1);
+		}
+	}
+	else if (heap->logsize == 1) {
+		memcpy(elem_addr, source, heap->elemsize);
+		--heap->logsize;
 	}
 	else {
-		fprintf(stderr, "Array empty or array index out of bounds!\n");
-		exit(1);
+		return EMPTY_ARRAY_ERROR;
 	}
-	return res;
-	
+	return 0;
+}
+
+static void
+heapify(HEAP *heap) {
+	/*	Heapify the heap array.
+		See https://tinyurl.com/34m7tun3 for why this method is optimal.
+	*/
+	long long last_parent = (heap->logsize - 2) / 2;
+	for (; last_parent >= 0; --last_parent) {
+		sift_down(heap, last_parent, heap->logsize - 1);
+	}
 }
 
 void
-push(HEAP* heap, void* vp) {
-	/*
-	Push the value at `vp` onto the heap. Resize the array if necessary.
-	*/
-	char* pa = (char*) heap->arr;
-	if (heap->end == heap->size - 1) {
-		/*
-		Resize the array and set `heap.size` to the new size returned by the 
-		call to `double_size`.
-		*/
-		heap->size = double_size(heap->arr, heap->size, heap->end);
-	}
-	// Increment `heap.end` to account for the new value we're pushing.
-	heap->end = heap->end + 1;
-	memcpy(&pa[heap->end * heap->tsize], value, heap->tsize);
-	/*
-	The value is likely not located at the correct index position, sift it up 
-	in the heap.
-	*/
-	sift_up(*heap, heap->end);
-}
+heap_dispose(HEAP *heap) {
+	/*	Free the heap array and any nested pointers inside the array.
 
-HEAP
-heapify(HEAP heap) {
-	long long last_parent = (heap.end - 1) / 2;
-	for (long long i = last_parent; i >= 0; --i) {
-		sift_down(heap, i, heap.end);
+		Params
+		------
+		*heap: a HEAP pointer
+	*/
+	if (heap->free_fn) {
+		for (int i = 0; i < heap->logsize; ++i) {
+			heap->free_fn((char*) heap->elems + i * heap->elemsize);
+		}
 	}
-	return heap;
+	free(heap->elems);
 }
 
 HEAP
 build_heap(
-		void* arr, 
-		long long size, 
-		long long tsize,
-		bool is_max, 
-		short (*cmp_fn)(void*, void*)) {
-	/*
-	Build and return either a min or max heap out of the supplied array (`arr`).
+		void *arr,
+		long long size,
+		long long elemsize,
+		bool is_max,
+		short (*cmp_fn)(void*, void*),
+		void (*free_fn)(void*)) {
+	/*	Build a min or max heap.
+
+		Params
+		------
+		*arr: pointer to the dynamic array to be heapified
+		size: the allocated size of the array
+		elemsize: the size, in bytes, of the elements of the array
+		is_max: whether the heap is a max heap
+		cmp_fn: the comparison function for comparing array elements
+		free_fn: optional freeing function for nested pointers
+
+		Returns
+		-------
+		A heap struct containing a heapified dynamic array.
 	*/
 	HEAP heap;
-	heap.arr = arr;
+	heap.elems = arr;
 	heap.size = size;
-	heap.end = size - 1;
-	heap.tsize = tsize;
+	heap.logsize = size;
+	heap.elemsize = elemsize;
 	heap.is_max = is_max;
-	heap.cmp = cmp_fn;
-	heap = heapify(heap);
+	heap.cmp_fn = cmp_fn;
+	heap.free_fn = free_fn;
+	heapify(&heap);
 	return heap;
 }
 
 void
 heap_sort(
-		void* arr,
+		void *arr,
 		long long size,
-		long long tsize,
-		short (*cmp_fn)(void*, void*),
-		bool reverse) {
-	/*
-	Sort the array in either ascending (`reverse`=0) or descending
-	(`reverse`=1) order.
+		long long elemsize,
+		bool asc,
+		short (*cmp_fn)(void*, void*)) {
+	/*	Sort the array in either ascending or descending order.
+
+		Params
+		------
+		*arr: the dynamic array to be sorted
+		size: the allocated size of the array
+		elemsize: the size, in bytes, of the elements of the array
+		asc: whether to sort in ascending order
+		cmp_fn: the comparison function for comparing array elements
 	*/
-	char* pa = (char*) arr;
+	
+	char *elems = (char*) arr;
 	HEAP heap;
-	// Build the appropriate heap based on the direction of the sort.
-	if (reverse == true) {
-		heap = build_heap(arr, size, tsize, 0, cmp_fn);
-	}
-	else {
-		heap = build_heap(arr, size, tsize, 1, cmp_fn);
-	}
-	long long upper = heap.end * heap.tsize;
-	for (upper; upper >= 0; upper = upper - heap.tsize) {
-		swap(&pa[0], &pa[upper], heap.tsize);
-		sift_down(heap, 0, upper / heap.tsize - 1);
+	heap = build_heap(arr, size, elemsize, asc, cmp_fn, NULL);
+	long long upper = (heap.logsize - 1) * heap.elemsize;
+	for (; upper > 0; upper -= heap.elemsize) {
+		swap(&elems[0], &elems[upper], heap.elemsize);
+		sift_down(&heap, 0, upper / heap.elemsize - 1);
 	}
 }
 
-#endif // HEAPS_H_
+#endif // HEAPS_H
