@@ -15,6 +15,8 @@
 #define ALLOC_ERROR 1
 #define EMPTY_ARRAY_ERROR 1
 
+// todo: add prototypes
+
 typedef struct {
 	void *elems;					// Dynamic array to be heapified.
 	long long size;					// Allocated size of the array.
@@ -271,7 +273,6 @@ heap_sort(
 		asc: whether to sort in ascending order
 		cmp_fn: the comparison function for comparing array elements
 	*/
-	
 	char *elems = (char*) arr;
 	HEAP heap;
 	heap = build_heap(arr, size, elemsize, asc, cmp_fn, NULL);
