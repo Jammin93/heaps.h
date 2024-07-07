@@ -2,7 +2,7 @@
 #ifndef HEAPS_H
 #define HEAPS
 
-#define VERSION "1.0.1"
+#define VERSION "1.0.2"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -44,13 +44,13 @@ swap(void *vp1, void *vp2, long long elemsize) {
 static bool
 gte(void *vp1, void *vp2, short (*cmp_fn)(void*, void*)) {
 	short res = cmp_fn(vp1, vp2);
-	return (res == 0 || res == 1);
+	return (res >= 0);
 }
 
 static bool
 lte(void *vp1, void *vp2, short (*cmp_fn)(void*, void*)) {
 	short res = cmp_fn(vp1, vp2);
-	return (res == 0 || res == -1);
+	return (res <= 0);
 }
 
 static short
