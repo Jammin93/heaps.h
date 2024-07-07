@@ -1,8 +1,8 @@
 // Static library for generic min and max heaps.
 #ifndef HEAPS_H
-#define HEAPS
+#define HEAPS_H
 
-#define VERSION "1.0.2"
+#define VERSION "1.1.0"
 
 #include <stdio.h>
 #include <stdlib.h>
