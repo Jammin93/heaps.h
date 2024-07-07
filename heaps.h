@@ -18,13 +18,13 @@
 // todo: add prototypes
 
 typedef struct {
-	void *elems;					// Dynamic array to be heapified.
-	long long size;					// Allocated size of the array.
-	long long logsize;				// Logical size of the array.
-	long long elemsize;				// Size of the elements in bytes.
-	bool is_max;					// Whether the heap is a max heap.
-	short (*cmp_fn)(void*, void*);	// Element comparison function.
-	void (*free_fn)(void*);			// Freeing function for nested pointers.
+	void *elems;                    // Dynamic array to be heapified.
+	long long size;                 // Allocated size of the array.
+	long long logsize;              // Logical size of the array.
+	long long elemsize;             // Size of the elements in bytes.
+	bool is_max;                    // Whether the heap is a max heap.
+	short (*cmp_fn)(void*, void*);  // Element comparison function.
+	void (*free_fn)(void*);         // Freeing function for nested pointers.
 } HEAP;
 
 static void
