@@ -130,13 +130,13 @@ sift_up(HEAP *heap, long long idx) {
 		(min heap).
 	*/
 	short ineq = (heap->is_max) ? 1 : -1;
-	long long parent = (idx - 1) / 2 * heap->elemsize;
+	long long parent = ((idx - 1) >> 1) * heap->elemsize;
 	idx = idx * heap->elemsize;
 	while (idx > 0 && heap->cmp_fn(&elems[idx], &elems[parent]) == ineq) {
 		swap(&elems[idx], &elems[parent], heap->elemsize);
 		
 		idx = parent;
-		parent = (idx / heap->elemsize - 1) / 2 * heap->elemsize;
+		parent = ((idx / heap->elemsize - 1) >> 1) * heap->elemsize;
 	}
 }
 
@@ -199,7 +199,7 @@ heapify(HEAP *heap) {
 	/*	Heapify the heap array.
 		See https://tinyurl.com/34m7tun3 for why this method is optimal.
 	*/
-	long long last_parent = (heap->logsize - 2) / 2;
+	long long last_parent = (heap->logsize - 2) >> 1;
 	for (; last_parent >= 0; --last_parent) {
 		sift_down(heap, last_parent, heap->logsize - 1);
 	}
