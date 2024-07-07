@@ -2,7 +2,7 @@
 #ifndef HEAPS_H
 #define HEAPS
 
-#define VERSION "1.0.0"
+#define VERSION "1.0.1"
 
 #include <stdio.h>
 #include <stdlib.h>
