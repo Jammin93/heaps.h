@@ -127,7 +127,7 @@ sift_up(HEAP *heap, long long idx) {
 		value at `idx` is less-than or greater-than some other value. This is
 		determined by whether we receive a min or max heap. Use -1 for 
 		less-than comparisons (min heaps) and 1 for greater-than comparisons
-		(min heap).
+		(max heap).
 	*/
 	short ineq = (heap->is_max) ? 1 : -1;
 	long long parent = ((idx - 1) >> 1) * heap->elemsize;
